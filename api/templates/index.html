@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Registro de Combates</title>
+
+<style>
+
+body{
+font-family: Arial;
+background:#f2f2f2;
+margin:40px;
+}
+
+h1{
+color:#333;
+}
+
+form{
+background:white;
+padding:20px;
+border-radius:8px;
+width:400px;
+box-shadow:0px 0px 10px rgba(0,0,0,0.1);
+}
+
+input{
+width:100%;
+padding:8px;
+margin:5px 0;
+}
+
+button{
+background:#2ecc71;
+color:white;
+border:none;
+padding:10px;
+width:100%;
+cursor:pointer;
+}
+
+button:hover{
+background:#27ae60;
+}
+
+table{
+margin-top:30px;
+border-collapse:collapse;
+width:100%;
+background:white;
+}
+
+th,td{
+border:1px solid #ddd;
+padding:8px;
+text-align:center;
+}
+
+th{
+background:#3498db;
+color:white;
+}
+
+.red{
+color:red;
+font-weight:bold;
+}
+
+.blue{
+color:blue;
+font-weight:bold;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>Registro de Combates</h1>
+
+<form action="/combats" method="POST">
+
+<label>Tiempo</label>
+<input name="time" required>
+
+<label>Participante Rojo</label>
+<input name="red" required>
+
+<label>Participante Azul</label>
+<input name="blue" required>
+
+<label>Puntos Rojo</label>
+<input name="points_red" type="number">
+
+<label>Puntos Azul</label>
+<input name="points_blue" type="number">
+
+<label>Faltas Rojo</label>
+<input name="fouls_red" type="number">
+
+<label>Faltas Azul</label>
+<input name="fouls_blue" type="number">
+
+<label>Jueces</label>
+<input name="judges">
+
+<button type="submit">Registrar Combate</button>
+
+</form>
+
+
+<h2>Lista de Combates</h2>
+
+<table>
+
+<tr>
+<th>ID</th>
+<th>Tiempo</th>
+<th>Rojo</th>
+<th>Azul</th>
+<th>Puntos</th>
+<th>Faltas</th>
+<th>Jueces</th>
+</tr>
+
+{% for c in combats %}
+
+<tr>
+
+<td>{{c[0]}}</td>
+<td>{{c[1]}}</td>
+
+<td class="red">{{c[2]}}</td>
+<td class="blue">{{c[3]}}</td>
+
+<td>{{c[4]}} - {{c[5]}}</td>
+<td>{{c[6]}} - {{c[7]}}</td>
+
+<td>{{c[8]}}</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+</body>
+</html>

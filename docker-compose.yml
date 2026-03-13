@@ -1,0 +1,34 @@
+version: '3.9'
+
+services:
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: combats
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  api:
+    build: ./api
+    ports:
+      - "5000:5000"
+    depends_on:
+      - rabbitmq
+      - db
+
+  worker:
+    build: ./worker
+    depends_on:
+      - rabbitmq
+      - db
