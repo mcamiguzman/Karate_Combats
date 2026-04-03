@@ -2,8 +2,10 @@ from flask import Flask, render_template, request
 import pika
 import json
 import psycopg2
+from flasgger import Swagger
 
 app = Flask(__name__)
+swagger = Swagger(app)
 
 
 def get_db():
@@ -35,6 +37,13 @@ def send_to_queue(message):
 
 @app.route("/")
 def index():
+    """
+    Get all combats
+    ---
+    responses:
+      200:
+        description: List of combats retrieved successfully
+    """
 
     conn = get_db()
     cur = conn.cursor()
@@ -50,6 +59,41 @@ def index():
 
 @app.route("/combats", methods=["POST"])
 def create_combat():
+    """
+    Create a new combat
+    ---
+    parameters:
+      - name: time
+        in: formData
+        type: string
+        required: true
+      - name: red
+        in: formData
+        type: string
+        required: true
+      - name: blue
+        in: formData
+        type: string
+        required: true
+      - name: points_red
+        in: formData
+        type: integer
+      - name: points_blue
+        in: formData
+        type: integer
+      - name: fouls_red
+        in: formData
+        type: integer
+      - name: fouls_blue
+        in: formData
+        type: integer
+      - name: judges
+        in: formData
+        type: integer
+    responses:
+      200:
+        description: Combat created and returned updated list
+    """
 
     data = {
         "time": request.form["time"],
