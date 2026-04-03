@@ -169,6 +169,36 @@ SELECT * FROM combats;
 
 ---
 
+## Unit Tests
+
+Run tests using:
+* pytest
+
+
+Tests are located in:
+
+tests/
+
+---
+
+## Static Code Analysis
+
+This project uses Ruff for static code analysis.
+
+Run:
+
+ruff check .
+
+---
+
+## API Documentation (Swagger)
+
+Swagger documentation is available at:
+
+http://localhost:5000/apidocs
+
+---
+
 ## Conclusions
 
 This project allowed the application of distributed system concepts, asynchronous communication using message queues, and containerized application deployment with Docker. It also highlights the importance of service decoupling to improve system scalability and maintainability.
