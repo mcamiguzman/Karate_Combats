@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net">
+  <diagram name="Page-1" id="XO4s8253q6E2JbaobU8l">
+    <mxGraphModel dx="1414" dy="759" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="Cc54fBEAvYZ7TDzsBBlM-14" edge="1" parent="1" source="Cc54fBEAvYZ7TDzsBBlM-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.25;entryY=1;entryDx=0;entryDy=0;" target="Cc54fBEAvYZ7TDzsBBlM-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Cc54fBEAvYZ7TDzsBBlM-15" connectable="0" parent="Cc54fBEAvYZ7TDzsBBlM-14" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="&lt;div&gt;GET Combats/&amp;lt;&amp;lt;ID&amp;gt;&amp;gt;&lt;/div&gt;&lt;div&gt;GET Orders&lt;/div&gt;" vertex="1">
+          <mxGeometry relative="1" x="-0.2559" as="geometry">
+            <mxPoint x="1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Cc54fBEAvYZ7TDzsBBlM-1" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="Actor" vertex="1">
+          <mxGeometry height="60" width="30" x="122.5" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="Cc54fBEAvYZ7TDzsBBlM-4" edge="1" parent="1" source="Cc54fBEAvYZ7TDzsBBlM-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="Cc54fBEAvYZ7TDzsBBlM-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Cc54fBEAvYZ7TDzsBBlM-7" connectable="0" parent="Cc54fBEAvYZ7TDzsBBlM-4" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="(1) POST" vertex="1">
+          <mxGeometry relative="1" x="-0.0167" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Cc54fBEAvYZ7TDzsBBlM-2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Productor de registros (combates de Karate)" vertex="1">
+          <mxGeometry height="60" width="165" x="55" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="Cc54fBEAvYZ7TDzsBBlM-12" edge="1" parent="1" source="Cc54fBEAvYZ7TDzsBBlM-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.75;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="Cc54fBEAvYZ7TDzsBBlM-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Cc54fBEAvYZ7TDzsBBlM-13" connectable="0" parent="Cc54fBEAvYZ7TDzsBBlM-12" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="202 ID" vertex="1">
+          <mxGeometry relative="1" x="0.0869" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Cc54fBEAvYZ7TDzsBBlM-16" edge="1" parent="1" source="Cc54fBEAvYZ7TDzsBBlM-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="Cc54fBEAvYZ7TDzsBBlM-8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Cc54fBEAvYZ7TDzsBBlM-17" connectable="0" parent="Cc54fBEAvYZ7TDzsBBlM-16" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="(3)" vertex="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Cc54fBEAvYZ7TDzsBBlM-3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;div&gt;API REST&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;GET&lt;/div&gt;&lt;div&gt;POST&lt;/div&gt;&lt;div&gt;PUT&lt;/div&gt;&lt;div&gt;DELETE&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;GET Combats/&amp;lt;&amp;lt;ID&amp;gt;&amp;gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="200" width="250" x="340" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="Cc54fBEAvYZ7TDzsBBlM-20" edge="1" parent="1" source="Cc54fBEAvYZ7TDzsBBlM-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="Cc54fBEAvYZ7TDzsBBlM-18">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Cc54fBEAvYZ7TDzsBBlM-21" edge="1" parent="1" source="Cc54fBEAvYZ7TDzsBBlM-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="Cc54fBEAvYZ7TDzsBBlM-19">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Cc54fBEAvYZ7TDzsBBlM-8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="RabbitMQ" vertex="1">
+          <mxGeometry height="60" width="165" x="710" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="Cc54fBEAvYZ7TDzsBBlM-9" parent="1" style="strokeWidth=2;html=1;shape=mxgraph.flowchart.database;whiteSpace=wrap;" value="&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;DB&lt;/div&gt;&lt;div&gt;Tabla Combats&lt;/div&gt;&lt;div&gt;ID | Status | Date&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Orders&lt;/div&gt;&lt;div&gt;Create new order&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="180" width="240" x="520" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="Cc54fBEAvYZ7TDzsBBlM-10" edge="1" parent="1" source="Cc54fBEAvYZ7TDzsBBlM-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" target="Cc54fBEAvYZ7TDzsBBlM-9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Cc54fBEAvYZ7TDzsBBlM-11" connectable="0" parent="Cc54fBEAvYZ7TDzsBBlM-10" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="(2)" vertex="1">
+          <mxGeometry relative="1" x="-0.1692" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Cc54fBEAvYZ7TDzsBBlM-18" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;div&gt;API Worker/Consumer&lt;/div&gt;&lt;div&gt;DELETE&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="165" x="1000" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="Cc54fBEAvYZ7TDzsBBlM-19" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;div&gt;API Consumer&lt;/div&gt;&lt;div&gt;POST&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="165" x="1000" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Cc54fBEAvYZ7TDzsBBlM-23" edge="1" parent="1" source="Cc54fBEAvYZ7TDzsBBlM-18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" target="Cc54fBEAvYZ7TDzsBBlM-9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Cc54fBEAvYZ7TDzsBBlM-25" connectable="0" parent="Cc54fBEAvYZ7TDzsBBlM-23" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Update Combats/&amp;lt;&amp;lt;ID&amp;gt;&amp;gt;" vertex="1">
+          <mxGeometry relative="1" x="-0.5741" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Cc54fBEAvYZ7TDzsBBlM-24" edge="1" parent="1" source="Cc54fBEAvYZ7TDzsBBlM-19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.85;entryDx=0;entryDy=0;entryPerimeter=0;" target="Cc54fBEAvYZ7TDzsBBlM-9">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1230" y="90" />
+              <mxPoint x="1230" y="553" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
