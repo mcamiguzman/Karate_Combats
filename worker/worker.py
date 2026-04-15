@@ -2,13 +2,23 @@ import pika
 import json
 import psycopg2
 import time
+import os
+
+# Environment variables with defaults for local development
+DB_HOST = os.environ.get("DB_HOST", "db")
+DB_USER = os.environ.get("DB_USER", "admin")
+DB_PASSWORD = os.environ.get("DB_PASSWORD", "admin")
+DB_NAME = os.environ.get("DB_NAME", "combats")
+
+RABBITMQ_HOST = os.environ.get("RABBITMQ_HOST", "rabbitmq")
+RABBITMQ_PORT = int(os.environ.get("RABBITMQ_PORT", "5672"))
 
 
 def wait_for_rabbitmq():
     while True:
         try:
             connection = pika.BlockingConnection(
-                pika.ConnectionParameters(host="rabbitmq")
+                pika.ConnectionParameters(host=RABBITMQ_HOST, port=RABBITMQ_PORT)
             )
             print("Connected to RabbitMQ")
             return connection
@@ -21,10 +31,10 @@ def get_db():
     while True:
         try:
             conn = psycopg2.connect(
-                host="db",
-                database="combats",
-                user="admin",
-                password="admin"
+                host=DB_HOST,
+                database=DB_NAME,
+                user=DB_USER,
+                password=DB_PASSWORD
             )
             print("Connected to PostgreSQL")
             return conn

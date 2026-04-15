@@ -2,25 +2,35 @@ from flask import Flask, render_template, request
 import pika
 import json
 import psycopg2
+import os
 from flasgger import Swagger
 
 app = Flask(__name__)
 swagger = Swagger(app)
 
+# Environment variables with defaults for local development
+DB_HOST = os.environ.get("DB_HOST", "db")
+DB_USER = os.environ.get("DB_USER", "admin")
+DB_PASSWORD = os.environ.get("DB_PASSWORD", "admin")
+DB_NAME = os.environ.get("DB_NAME", "combats")
+
+RABBITMQ_HOST = os.environ.get("RABBITMQ_HOST", "rabbitmq")
+RABBITMQ_PORT = int(os.environ.get("RABBITMQ_PORT", "5672"))
+
 
 def get_db():
     return psycopg2.connect(
-        host="db",
-        database="combats",
-        user="admin",
-        password="admin"
+        host=DB_HOST,
+        database=DB_NAME,
+        user=DB_USER,
+        password=DB_PASSWORD
     )
 
 
 def send_to_queue(message):
 
     connection = pika.BlockingConnection(
-        pika.ConnectionParameters(host="rabbitmq")
+        pika.ConnectionParameters(host=RABBITMQ_HOST, port=RABBITMQ_PORT)
     )
 
     channel = connection.channel()
