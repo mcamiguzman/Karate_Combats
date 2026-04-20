@@ -218,7 +218,7 @@ resource "aws_security_group" "worker_sg" {
   }
 }
 
-resource "aws_security_group" "rabbitmq_sg" {
+resource "aws_network_interface" "rabbitmq_eni" {
   subnet_id           = aws_subnet.public_subnet.id
   security_groups     = [aws_security_group.rabbitmq_sg.id]
   private_ips         = [var.rabbitmq_private_ip]
@@ -499,7 +499,7 @@ resource "aws_launch_template" "api_lt" {
     arn = aws_iam_instance_profile.api_profile.arn
   }
 
-  security_groups = [aws_security_group.api_sg.id]
+  vpc_security_group_ids = [aws_security_group.api_sg.id]
 
   user_data = base64encode(templatefile("${path.module}/user_data/api-userdata.sh", {
     DB_HOST       = var.postgresql_private_ip
