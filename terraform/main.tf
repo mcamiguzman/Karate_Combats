@@ -36,6 +36,17 @@ resource "aws_subnet" "public_subnet" {
   }
 }
 
+resource "aws_subnet" "public_subnet_2" {
+  vpc_id                  = aws_vpc.karate_vpc.id
+  cidr_block              = "10.0.2.0/24"
+  availability_zone       = "us-east-1b"
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name = "${var.project_name}-public-subnet-2"
+  }
+}
+
 resource "aws_internet_gateway" "karate_igw" {
   vpc_id = aws_vpc.karate_vpc.id
 
@@ -407,7 +418,7 @@ resource "aws_lb" "api_alb" {
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_sg.id]
-  subnets            = [aws_subnet.public_subnet.id]
+  subnets            = [aws_subnet.public_subnet.id, aws_subnet.public_subnet_2.id]
 
   enable_deletion_protection = false
 
@@ -495,10 +506,6 @@ resource "aws_launch_template" "api_lt" {
   image_id      = data.aws_ami.ubuntu.id
   instance_type = var.instance_type
 
-  iam_instance_profile {
-    arn = aws_iam_instance_profile.api_profile.arn
-  }
-
   vpc_security_group_ids = [aws_security_group.api_sg.id]
 
   user_data = base64encode(templatefile("${path.module}/user_data/api-userdata.sh", {
@@ -536,54 +543,9 @@ resource "aws_launch_template" "api_lt" {
 }
 
 # ===========================
-# IAM Role for API Instances
-# ===========================
-
-resource "aws_iam_role" "api_role" {
-  name_prefix = "karate-api-"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "ec2.amazonaws.com"
-        }
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy" "api_policy" {
-  name_prefix = "karate-api-"
-  role        = aws_iam_role.api_role.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents"
-        ]
-        Resource = "arn:aws:logs:*:*:*"
-      }
-    ]
-  })
-}
-
-resource "aws_iam_instance_profile" "api_profile" {
-  name_prefix = "karate-api-"
-  role        = aws_iam_role.api_role.name
-}
-
-# ===========================
 # Auto Scaling Group for API
 # ===========================
+
 
 resource "aws_autoscaling_group" "api_asg" {
   name_prefix         = "karate-api-asg-"
