@@ -57,7 +57,7 @@ def callback(ch, method, properties, body):
         cur = conn.cursor()
 
         if action == "create":
-            print(f"Processing CREATE action for combat")
+            print("Processing CREATE action for combat")
             
             cur.execute("""
             INSERT INTO combats
