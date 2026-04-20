@@ -1,26 +1,36 @@
-output "api_public_ip" {
-  description = "Public IP address of the API server"
-  value       = aws_eip.api_eip.public_ip
-}
-
-output "api_private_ip" {
-  description = "Private IP address of the API server"
-  value       = aws_network_interface.api_eni.private_ip
+output "api_alb_dns_name" {
+  description = "DNS name of the Application Load Balancer"
+  value       = aws_lb.api_alb.dns_name
 }
 
 output "api_url" {
-  description = "URL to access the API server"
-  value       = "http://${aws_eip.api_eip.public_ip}:5000"
+  description = "URL to access the API server through ALB"
+  value       = "http://${aws_lb.api_alb.dns_name}"
+}
+
+output "api_health_check_url" {
+  description = "Health check endpoint URL"
+  value       = "http://${aws_lb.api_alb.dns_name}/health"
+}
+
+output "api_swagger_url" {
+  description = "Swagger API documentation URL"
+  value       = "http://${aws_lb.api_alb.dns_name}/apidocs"
+}
+
+output "alb_arn" {
+  description = "ARN of the Application Load Balancer"
+  value       = aws_lb.api_alb.arn
+}
+
+output "asg_name" {
+  description = "Name of the API Auto Scaling Group"
+  value       = aws_autoscaling_group.api_asg.name
 }
 
 output "rabbitmq_public_ip" {
   description = "Public IP address of the RabbitMQ server"
   value       = aws_eip.rabbitmq_eip.public_ip
-}
-
-output "rabbitmq_private_ip" {
-  description = "Private IP address of the RabbitMQ server"
-  value       = aws_network_interface.rabbitmq_eni.private_ip
 }
 
 output "rabbitmq_management_url" {
@@ -31,11 +41,6 @@ output "rabbitmq_management_url" {
 output "postgresql_public_ip" {
   description = "Public IP address of the PostgreSQL server"
   value       = aws_eip.postgresql_eip.public_ip
-}
-
-output "postgresql_private_ip" {
-  description = "Private IP address of the PostgreSQL server"
-  value       = aws_network_interface.postgresql_eni.private_ip
 }
 
 output "postgresql_connection_string" {
@@ -62,11 +67,6 @@ output "vpc_id" {
 output "subnet_id" {
   description = "ID of the public subnet"
   value       = aws_subnet.public_subnet.id
-}
-
-output "ssh_to_api" {
-  description = "SSH command to connect to API server"
-  value       = "ssh -i your_key.pem ubuntu@${aws_eip.api_eip.public_ip}"
 }
 
 output "ssh_to_rabbitmq" {

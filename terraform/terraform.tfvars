@@ -8,11 +8,15 @@ instance_type        = "t3.micro"
 vpc_cidr             = "10.0.0.0/16"
 public_subnet_cidr   = "10.0.1.0/24"
 
-# Private IP Addresses
-api_private_ip         = "10.0.1.10"
+# Private IP Addresses (for non-ASG resources only)
 rabbitmq_private_ip    = "10.0.1.20"
 postgresql_private_ip  = "10.0.1.30"
 worker_private_ip      = "10.0.1.40"
+
+# Auto Scaling Group Configuration
+asg_min_size           = 1
+asg_max_size           = 3
+asg_desired_capacity   = 1
 
 # SSH Access
 # IMPORTANT: Change this to your IP address in production
@@ -24,5 +28,5 @@ db_user              = "admin"
 db_password          = "admin"  # CHANGE THIS IN PRODUCTION
 db_name              = "combats"
 
-# Git Repository (optional)
-git_repo_url         = ""
+# Git Repository
+git_repo_url         = "https://github.com/mcamiguzman/Karate_Combats"

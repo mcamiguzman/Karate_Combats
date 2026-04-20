@@ -41,12 +41,6 @@ variable "admin_cidr_blocks" {
 }
 
 # Private IP addresses for EC2 instances
-variable "api_private_ip" {
-  description = "Private IP address for API server"
-  type        = string
-  default     = "10.0.1.10"
-}
-
 variable "rabbitmq_private_ip" {
   description = "Private IP address for RabbitMQ server"
   type        = string
@@ -63,6 +57,25 @@ variable "worker_private_ip" {
   description = "Private IP address for Worker server"
   type        = string
   default     = "10.0.1.40"
+}
+
+# Auto Scaling Group configuration for API tier
+variable "asg_min_size" {
+  description = "Minimum number of instances in API ASG"
+  type        = number
+  default     = 1
+}
+
+variable "asg_max_size" {
+  description = "Maximum number of instances in API ASG"
+  type        = number
+  default     = 3
+}
+
+variable "asg_desired_capacity" {
+  description = "Desired number of instances in API ASG"
+  type        = number
+  default     = 1
 }
 
 # Database configuration
@@ -87,7 +100,7 @@ variable "db_name" {
 }
 
 variable "git_repo_url" {
-  description = "Git repository URL for application code (optional, for future use)"
+  description = "Git repository URL for application code"
   type        = string
-  default     = ""
+  default     = "https://github.com/mcamiguzman/Karate_Combats"
 }
