@@ -80,7 +80,8 @@ Browser → API → RabbitMQ → Worker → PostgreSQL
 1. Clone the repository:
 
 git clone <REPOSITORY_URL>
-cd karatecombats
+
+2. Construir y levantar los contenedores
 
 docker compose up --build
 
@@ -178,6 +179,18 @@ Run tests using:
 Tests are located in:
 
 tests/
+
+Run Tests
+
+
+```bash
+set PYTHONPATH=.
+pytest -v
+```
+
+PYTHONPATH=. tells Python to include the project root in its module search path.
+This allows internal imports (e.g., api.app) to work correctly during test execution.
+From the project root, run:
 
 ---
 
