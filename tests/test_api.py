@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from api.app import app
 
+
 @pytest.fixture
 def client():
     app.config["TESTING"] = True
@@ -27,7 +28,7 @@ def test_create_combat(client):
     with patch("api.app.send_to_queue") as mock_queue, \
          patch("api.app.get_db") as mock_db:
 
-        # Mock DB también aquí
+        # Mock DB
         mock_conn = MagicMock()
         mock_cursor = MagicMock()
 
@@ -47,4 +48,6 @@ def test_create_combat(client):
             "judges": "3"
         })
 
+        # Verificaciones
         assert response.status_code == 200
+        mock_queue.assert_called_once()
