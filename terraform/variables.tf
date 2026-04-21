@@ -99,6 +99,21 @@ variable "db_name" {
   default     = "combats"
 }
 
+# RabbitMQ configuration
+variable "rabbitmq_user" {
+  description = "RabbitMQ username for application services"
+  type        = string
+  default     = "karate"
+  sensitive   = true
+}
+
+variable "rabbitmq_password" {
+  description = "RabbitMQ password for application services"
+  type        = string
+  default     = "karate_password"
+  sensitive   = true
+}
+
 variable "git_repo_url" {
   description = "Git repository URL for application code"
   type        = string

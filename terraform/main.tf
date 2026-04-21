@@ -337,7 +337,10 @@ resource "aws_instance" "rabbitmq_server" {
     device_index         = 0
   }
 
-  user_data = base64encode(file("${path.module}/user_data/rabbitmq-userdata.sh"))
+  user_data = base64encode(templatefile("${path.module}/user_data/rabbitmq-userdata.sh", {
+    RABBITMQ_USER     = var.rabbitmq_user
+    RABBITMQ_PASSWORD = var.rabbitmq_password
+  }))
 
   root_block_device {
     volume_type           = "gp2"
@@ -350,6 +353,10 @@ resource "aws_instance" "rabbitmq_server" {
   }
 
   depends_on = [
+    aws_internet_gateway.karate_igw,
+    aws_subnet.public_subnet,
+    aws_security_group.rabbitmq_sg,
+    aws_network_interface.rabbitmq_eni,
     aws_eip.rabbitmq_eip
   ]
 }

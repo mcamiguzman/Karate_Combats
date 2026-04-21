@@ -13,22 +13,88 @@ DB_NAME = os.environ.get("DB_NAME", "combats")
 RABBITMQ_HOST = os.environ.get("RABBITMQ_HOST", "rabbitmq")
 RABBITMQ_PORT = int(os.environ.get("RABBITMQ_PORT", "5672"))
 
+# Track service readiness and startup timing
+_db_connected = False
+_rabbitmq_connected = False
+_startup_time = time.time()
+_STARTUP_GRACE_PERIOD = 120  # Give services 2 minutes to stabilize
+
+# Circuit breaker state for resilience
+_db_failures = 0
+_rabbitmq_failures = 0
+_DB_FAILURE_THRESHOLD = 5
+_RABBITMQ_FAILURE_THRESHOLD = 5
+_CIRCUIT_BREAKER_RESET_TIME = 30
+_last_db_failure_time = None
+_last_rabbitmq_failure_time = None
+
+
+def is_startup_grace_period():
+    """Check if we're still in the startup grace period"""
+    return (time.time() - _startup_time) < _STARTUP_GRACE_PERIOD
+
 
 def wait_for_rabbitmq():
-    while True:
+    """
+    Wait for RabbitMQ with exponential backoff and circuit breaker.
+    During startup grace period, retries are more lenient.
+    """
+    global _rabbitmq_connected, _rabbitmq_failures, _last_rabbitmq_failure_time
+    
+    max_retries = 3
+    max_total_time = 30
+    start_time = time.time()
+    backoff_delays = [2, 4, 8]
+    
+    for attempt in range(max_retries):
         try:
             connection = pika.BlockingConnection(
                 pika.ConnectionParameters(host=RABBITMQ_HOST, port=RABBITMQ_PORT)
             )
-            print("Connected to RabbitMQ")
+            if not _rabbitmq_connected:
+                _rabbitmq_connected = True
+                print(f"Connected to RabbitMQ (attempt {attempt + 1}/{max_retries})")
+            
+            # Reset failure counter on success
+            _rabbitmq_failures = 0
+            _last_rabbitmq_failure_time = None
             return connection
-        except pika.exceptions.AMQPConnectionError:
-            print("RabbitMQ not ready, retrying in 5 seconds...")
-            time.sleep(5)
+        
+        except pika.exceptions.AMQPConnectionError as e:
+            _rabbitmq_failures += 1
+            _last_rabbitmq_failure_time = time.time()
+            elapsed = time.time() - start_time
+            
+            print(f"RabbitMQ connection attempt {attempt + 1}/{max_retries} failed (failures: {_rabbitmq_failures}): {str(e)}")
+            
+            if elapsed >= max_total_time:
+                print(f"RabbitMQ retry timeout exceeded ({elapsed:.1f}s >= {max_total_time}s)")
+                raise
+            
+            if attempt < max_retries - 1:
+                delay = backoff_delays[attempt]
+                if elapsed + delay > max_total_time:
+                    print(f"Next retry would exceed max time, giving up")
+                    raise
+                print(f"Waiting {delay}s before retry...")
+                time.sleep(delay)
+            else:
+                raise
 
 
 def get_db():
-    while True:
+    """
+    Get database connection with exponential backoff and circuit breaker.
+    During startup grace period, retries are more lenient.
+    """
+    global _db_connected, _db_failures, _last_db_failure_time
+    
+    max_retries = 3
+    max_total_time = 30
+    start_time = time.time()
+    backoff_delays = [2, 4, 8]
+    
+    for attempt in range(max_retries):
         try:
             conn = psycopg2.connect(
                 host=DB_HOST,
@@ -36,11 +102,35 @@ def get_db():
                 user=DB_USER,
                 password=DB_PASSWORD
             )
-            print("Connected to PostgreSQL")
+            if not _db_connected:
+                _db_connected = True
+                print(f"Connected to PostgreSQL (attempt {attempt + 1}/{max_retries})")
+            
+            # Reset failure counter on success
+            _db_failures = 0
+            _last_db_failure_time = None
             return conn
-        except psycopg2.OperationalError:
-            print("PostgreSQL not ready, retrying in 5 seconds...")
-            time.sleep(5)
+        
+        except psycopg2.OperationalError as e:
+            _db_failures += 1
+            _last_db_failure_time = time.time()
+            elapsed = time.time() - start_time
+            
+            print(f"PostgreSQL connection attempt {attempt + 1}/{max_retries} failed (failures: {_db_failures}): {str(e)}")
+            
+            if elapsed >= max_total_time:
+                print(f"PostgreSQL retry timeout exceeded ({elapsed:.1f}s >= {max_total_time}s)")
+                raise
+            
+            if attempt < max_retries - 1:
+                delay = backoff_delays[attempt]
+                if elapsed + delay > max_total_time:
+                    print(f"Next retry would exceed max time, giving up")
+                    raise
+                print(f"Waiting {delay}s before retry...")
+                time.sleep(delay)
+            else:
+                raise
 
 
 def callback(ch, method, properties, body):
