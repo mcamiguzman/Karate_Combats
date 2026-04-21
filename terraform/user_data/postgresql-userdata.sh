@@ -48,20 +48,44 @@ SQL
 echo "Created database and user"
 
 # Configure PostgreSQL to accept connections from other servers
-# Backup original file
-cp /etc/postgresql/*/main/pg_hba.conf /etc/postgresql/*/main/pg_hba.conf.backup
-
-# Update pg_hba.conf to allow TCP connections from the VPC
-cat >> /etc/postgresql/*/main/pg_hba.conf << EOF
+# Backup and update pg_hba.conf for all PostgreSQL versions
+for PG_HBA in /etc/postgresql/*/main/pg_hba.conf; do
+    if [ -f "$PG_HBA" ]; then
+        # Backup original file
+        cp "$PG_HBA" "$PG_HBA.backup"
+        
+        # Remove any existing VPC allow rules to avoid duplicates
+        sed -i "/10.0.0.0\/16/d" "$PG_HBA"
+        
+        # Add new connection rules for the VPC
+        cat >> "$PG_HBA" << RULES_EOF
 
 # Allow connections from API and Worker servers in the VPC
 host    ${DB_NAME}    ${DB_USER}    10.0.0.0/16    md5
-host    all           all          10.0.0.0/16    md5
-EOF
+host    all           all           10.0.0.0/16    md5
+RULES_EOF
+        echo "Updated: $PG_HBA"
+    fi
+done
 
 # Update postgresql.conf to listen on all network interfaces
-POSTGRES_CONF="/etc/postgresql/*/main/postgresql.conf"
-sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/g" $POSTGRES_CONF
+# Find all postgresql.conf files and update them
+for POSTGRES_CONF in /etc/postgresql/*/main/postgresql.conf; do
+    if [ -f "$POSTGRES_CONF" ]; then
+        # Handle both commented and uncommented listen_addresses lines
+        if grep -q "^#listen_addresses" "$POSTGRES_CONF"; then
+            # If commented out, uncomment and update
+            sed -i "s/^#listen_addresses = .*/listen_addresses = '*'/g" "$POSTGRES_CONF"
+        elif grep -q "^listen_addresses" "$POSTGRES_CONF"; then
+            # If already uncommented, just update the value
+            sed -i "s/^listen_addresses = .*/listen_addresses = '*'/g" "$POSTGRES_CONF"
+        else
+            # If not found, add it
+            echo "listen_addresses = '*'" >> "$POSTGRES_CONF"
+        fi
+        echo "Updated: $POSTGRES_CONF"
+    fi
+done
 
 echo "Configured PostgreSQL for network access"
 
