@@ -267,11 +267,11 @@ def create_combat():
         in: formData
         type: string
         required: true
-      - name: red
+      - name: participant_red
         in: formData
         type: string
         required: true
-      - name: blue
+      - name: participant_blue
         in: formData
         type: string
         required: true
@@ -298,7 +298,7 @@ def create_combat():
     """
     
     # Validate required fields
-    required_fields = ["time", "red", "blue", "judges"]
+    required_fields = ["time", "participant_red", "participant_blue", "judges"]
     missing_fields = [field for field in required_fields if field not in request.form]
     
     if missing_fields:
@@ -314,8 +314,8 @@ def create_combat():
     try:
         data = {
             "time": request.form["time"],
-            "red": request.form["red"],
-            "blue": request.form["blue"],
+            "participant_red": request.form["participant_red"],
+            "participant_blue": request.form["participant_blue"],
             "points_red": request.form.get("points_red", 0),
             "points_blue": request.form.get("points_blue", 0),
             "fouls_red": request.form.get("fouls_red", 0),
