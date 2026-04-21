@@ -104,3 +104,10 @@ variable "git_repo_url" {
   type        = string
   default     = "https://github.com/mcamiguzman/Karate_Combats"
 }
+
+# EC2 Key Pair for SSH access
+variable "ec2_key_pair_name" {
+  description = "EC2 key pair name for SSH access to instances"
+  type        = string
+  default     = "karate-combats"
+}

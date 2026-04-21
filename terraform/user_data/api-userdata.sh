@@ -78,6 +78,9 @@ EnvironmentFile=/opt/karate-api/.env
 ExecStart=/opt/karate-api/venv/bin/python -m flask --app api.app run --host=0.0.0.0 --port=5000
 Restart=always
 RestartSec=10
+StandardOutput=journal
+StandardError=journal
+Environment="PYTHONUNBUFFERED=1"
 
 [Install]
 WantedBy=multi-user.target

@@ -65,11 +65,12 @@ vm_memory_high_watermark.relative = 0.7
 # Disk free limit (in bytes)
 disk_free_limit.absolute = 50MB
 
-# Enable management plugin
-management.tcp.port = 15672
-
-# Listening port
+# AMQP listeners - bind to all interfaces
 listeners.tcp.default = 5672
+
+# Management plugin configuration - expose dashboard on all interfaces
+management.tcp.port = 15672
+management.tcp.ip = 0.0.0.0
 
 # Enable AMQP frame max size
 channel_max = 2048

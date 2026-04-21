@@ -104,11 +104,11 @@ resource "aws_security_group" "api_sg" {
   }
 
   ingress {
-    from_port   = 5000
-    to_port     = 5000
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "Allow Flask API port from anywhere"
+    from_port       = 5000
+    to_port         = 5000
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb_sg.id]
+    description     = "Allow Flask API port from ALB only"
   }
 
   ingress {
@@ -151,6 +151,14 @@ resource "aws_security_group" "rabbitmq_sg" {
     protocol        = "tcp"
     security_groups = [aws_security_group.api_sg.id, aws_security_group.worker_sg.id]
     description     = "Allow RabbitMQ Management UI from API and Worker"
+  }
+
+  ingress {
+    from_port   = 15672
+    to_port     = 15672
+    protocol    = "tcp"
+    cidr_blocks = var.admin_cidr_blocks
+    description = "Allow RabbitMQ Management UI from admin"
   }
 
   ingress {
@@ -322,6 +330,7 @@ data "aws_ami" "ubuntu" {
 resource "aws_instance" "rabbitmq_server" {
   ami           = data.aws_ami.ubuntu.id
   instance_type = var.instance_type
+  key_name      = var.ec2_key_pair_name
 
   network_interface {
     network_interface_id = aws_network_interface.rabbitmq_eni.id
@@ -349,6 +358,7 @@ resource "aws_instance" "rabbitmq_server" {
 resource "aws_instance" "postgresql_server" {
   ami           = data.aws_ami.ubuntu.id
   instance_type = var.instance_type
+  key_name      = var.ec2_key_pair_name
 
   network_interface {
     network_interface_id = aws_network_interface.postgresql_eni.id
@@ -380,6 +390,7 @@ resource "aws_instance" "postgresql_server" {
 resource "aws_instance" "worker_server" {
   ami           = data.aws_ami.ubuntu.id
   instance_type = var.instance_type
+  key_name      = var.ec2_key_pair_name
 
   network_interface {
     network_interface_id = aws_network_interface.worker_eni.id
@@ -510,6 +521,7 @@ resource "aws_launch_template" "api_lt" {
   name_prefix   = "karate-api-"
   image_id      = data.aws_ami.ubuntu.id
   instance_type = var.instance_type
+  key_name      = var.ec2_key_pair_name
 
   vpc_security_group_ids = [aws_security_group.api_sg.id]
 

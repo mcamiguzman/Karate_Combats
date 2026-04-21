@@ -5,8 +5,11 @@ import psycopg2
 import os
 from flasgger import Swagger
 import time
+import traceback
 
-app = Flask(__name__)
+# Ensure Flask can find templates correctly
+template_dir = os.path.join(os.path.dirname(__file__), 'templates')
+app = Flask(__name__, template_folder=template_dir)
 swagger = Swagger(app)
 
 # Environment variables with defaults for local development
@@ -24,6 +27,15 @@ _rabbitmq_connected = False
 _startup_time = time.time()
 _STARTUP_GRACE_PERIOD = 120  # Give services 2 minutes to stabilize
 
+# Circuit breaker state for resilience
+_db_failures = 0
+_rabbitmq_failures = 0
+_DB_FAILURE_THRESHOLD = 5  # Consecutive failures before circuit opens
+_RABBITMQ_FAILURE_THRESHOLD = 5
+_CIRCUIT_BREAKER_RESET_TIME = 30  # Seconds before attempting retry after circuit opens
+_last_db_failure_time = None
+_last_rabbitmq_failure_time = None
+
 
 def is_startup_grace_period():
     """Check if we're still in the startup grace period"""
@@ -31,30 +43,139 @@ def is_startup_grace_period():
 
 
 def get_db():
-    return psycopg2.connect(
-        host=DB_HOST,
-        database=DB_NAME,
-        user=DB_USER,
-        password=DB_PASSWORD
-    )
+    """Get database connection with exponential backoff and circuit breaker"""
+    global _db_connected, _db_failures, _last_db_failure_time
+    
+    # Check circuit breaker - fast fail if too many recent failures
+    if _db_failures >= _DB_FAILURE_THRESHOLD:
+        time_since_last_failure = time.time() - _last_db_failure_time if _last_db_failure_time else 0
+        if time_since_last_failure < _CIRCUIT_BREAKER_RESET_TIME:
+            app.logger.warning(f"Database circuit breaker OPEN: {_db_failures} consecutive failures. Skipping reconnect attempt.")
+            raise Exception(f"Database circuit breaker open. Failed {_db_failures} times. Retry in {_CIRCUIT_BREAKER_RESET_TIME - time_since_last_failure:.1f}s")
+        else:
+            # Reset circuit breaker after grace period
+            app.logger.info("Database circuit breaker RESET - attempting reconnection")
+            _db_failures = 0
+            _last_db_failure_time = None
+    
+    max_retries = 3
+    max_total_time = 30  # Don't retry longer than 30 seconds total
+    start_time = time.time()
+    
+    # Exponential backoff: 2, 4, 8 seconds
+    backoff_delays = [2, 4, 8]
+    
+    for attempt in range(max_retries):
+        try:
+            conn = psycopg2.connect(
+                host=DB_HOST,
+                database=DB_NAME,
+                user=DB_USER,
+                password=DB_PASSWORD
+            )
+            if not _db_connected:
+                _db_connected = True
+                app.logger.info(f"Successfully connected to PostgreSQL (attempt {attempt + 1}/{max_retries})")
+            
+            # Reset failure counter on success
+            _db_failures = 0
+            _last_db_failure_time = None
+            return conn
+        
+        except psycopg2.OperationalError as e:
+            _db_failures += 1
+            _last_db_failure_time = time.time()
+            elapsed = time.time() - start_time
+            
+            app.logger.warning(f"PostgreSQL connection attempt {attempt + 1}/{max_retries} failed (failures: {_db_failures}/{_DB_FAILURE_THRESHOLD}): {str(e)}")
+            
+            # Check if we've exceeded max retry time
+            if elapsed >= max_total_time:
+                app.logger.error(f"PostgreSQL retry timeout exceeded ({elapsed:.1f}s >= {max_total_time}s)")
+                raise
+            
+            # Wait with exponential backoff before next attempt
+            if attempt < max_retries - 1:
+                delay = backoff_delays[attempt]
+                if elapsed + delay > max_total_time:
+                    # Would exceed max time, so don't retry
+                    app.logger.error(f"Next retry would exceed max time ({elapsed + delay:.1f}s > {max_total_time}s), giving up")
+                    raise
+                app.logger.info(f"Waiting {delay}s before retry...")
+                time.sleep(delay)
+            else:
+                raise
 
 
 def send_to_queue(message):
-
-    connection = pika.BlockingConnection(
-        pika.ConnectionParameters(host=RABBITMQ_HOST, port=RABBITMQ_PORT)
-    )
-
-    channel = connection.channel()
-    channel.queue_declare(queue="combat_queue")
-
-    channel.basic_publish(
-        exchange="",
-        routing_key="combat_queue",
-        body=json.dumps(message)
-    )
-
-    connection.close()
+    """Send message to RabbitMQ with exponential backoff and circuit breaker"""
+    global _rabbitmq_connected, _rabbitmq_failures, _last_rabbitmq_failure_time
+    
+    # Check circuit breaker - fast fail if too many recent failures
+    if _rabbitmq_failures >= _RABBITMQ_FAILURE_THRESHOLD:
+        time_since_last_failure = time.time() - _last_rabbitmq_failure_time if _last_rabbitmq_failure_time else 0
+        if time_since_last_failure < _CIRCUIT_BREAKER_RESET_TIME:
+            app.logger.warning(f"RabbitMQ circuit breaker OPEN: {_rabbitmq_failures} consecutive failures. Skipping reconnect attempt.")
+            raise Exception(f"RabbitMQ circuit breaker open. Failed {_rabbitmq_failures} times. Retry in {_CIRCUIT_BREAKER_RESET_TIME - time_since_last_failure:.1f}s")
+        else:
+            # Reset circuit breaker after grace period
+            app.logger.info("RabbitMQ circuit breaker RESET - attempting reconnection")
+            _rabbitmq_failures = 0
+            _last_rabbitmq_failure_time = None
+    
+    max_retries = 3
+    max_total_time = 30  # Don't retry longer than 30 seconds total
+    start_time = time.time()
+    
+    # Exponential backoff: 2, 4, 8 seconds
+    backoff_delays = [2, 4, 8]
+    
+    for attempt in range(max_retries):
+        try:
+            connection = pika.BlockingConnection(
+                pika.ConnectionParameters(host=RABBITMQ_HOST, port=RABBITMQ_PORT)
+            )
+            channel = connection.channel()
+            channel.queue_declare(queue="combat_queue")
+            channel.basic_publish(
+                exchange="",
+                routing_key="combat_queue",
+                body=json.dumps(message)
+            )
+            connection.close()
+            
+            if not _rabbitmq_connected:
+                _rabbitmq_connected = True
+                app.logger.info(f"Successfully connected to RabbitMQ (attempt {attempt + 1}/{max_retries})")
+            
+            # Reset failure counter on success
+            _rabbitmq_failures = 0
+            _last_rabbitmq_failure_time = None
+            return
+        
+        except pika.exceptions.AMQPConnectionError as e:
+            _rabbitmq_failures += 1
+            _last_rabbitmq_failure_time = time.time()
+            elapsed = time.time() - start_time
+            
+            app.logger.warning(f"RabbitMQ connection attempt {attempt + 1}/{max_retries} failed (failures: {_rabbitmq_failures}/{_RABBITMQ_FAILURE_THRESHOLD}): {str(e)}")
+            
+            # Check if we've exceeded max retry time
+            if elapsed >= max_total_time:
+                app.logger.error(f"RabbitMQ retry timeout exceeded ({elapsed:.1f}s >= {max_total_time}s)")
+                raise
+            
+            # Wait with exponential backoff before next attempt
+            if attempt < max_retries - 1:
+                delay = backoff_delays[attempt]
+                if elapsed + delay > max_total_time:
+                    # Would exceed max time, so don't retry
+                    app.logger.error(f"Next retry would exceed max time ({elapsed + delay:.1f}s > {max_total_time}s), giving up")
+                    raise
+                app.logger.info(f"Waiting {delay}s before retry...")
+                time.sleep(delay)
+            else:
+                raise
 
 
 @app.route("/")
@@ -65,18 +186,75 @@ def index():
     responses:
       200:
         description: List of combats retrieved successfully
+      500:
+        description: Internal server error
     """
+    try:
+        conn = get_db()
+        cur = conn.cursor()
 
-    conn = get_db()
-    cur = conn.cursor()
+        cur.execute("SELECT * FROM combats ORDER BY id DESC")
+        combats = cur.fetchall()
 
-    cur.execute("SELECT * FROM combats ORDER BY id DESC")
-    combats = cur.fetchall()
+        cur.close()
+        conn.close()
 
-    cur.close()
-    conn.close()
+        return render_template("index.html", combats=combats)
+    except FileNotFoundError as e:
+        # Template not found
+        error_msg = f"Template not found: {str(e)}. Template directory: {template_dir}"
+        app.logger.error(error_msg)
+        return f"<h1>500 Error: Template Not Found</h1><p>{error_msg}</p>", 500
+    except Exception as e:
+        # Other errors (database, etc.)
+        error_msg = f"Error retrieving combats: {str(e)}"
+        app.logger.error(f"{error_msg}\n{traceback.format_exc()}")
+        return f"<h1>500 Error: Internal Server Error</h1><p>{error_msg}</p>", 500
 
-    return render_template("index.html", combats=combats)
+
+@app.route("/combats", methods=["GET"])
+def get_combats():
+    """
+    Get all combats as JSON
+    ---
+    responses:
+      200:
+        description: List of all combats retrieved successfully
+      500:
+        description: Internal server error
+    """
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+
+        cur.execute("SELECT * FROM combats ORDER BY id DESC")
+        combats = cur.fetchall()
+
+        cur.close()
+        conn.close()
+
+        return {
+            "combats": [
+                {
+                    "id": combat[0],
+                    "time": combat[1],
+                    "participant_red": combat[2],
+                    "participant_blue": combat[3],
+                    "points_red": combat[4],
+                    "points_blue": combat[5],
+                    "fouls_red": combat[6],
+                    "fouls_blue": combat[7],
+                    "judges": combat[8],
+                    "status": combat[9],
+                    "date": str(combat[10]) if combat[10] else None
+                }
+                for combat in combats
+            ]
+        }, 200
+    except Exception as e:
+        error_msg = f"Error retrieving combats: {str(e)}"
+        app.logger.error(f"{error_msg}\n{traceback.format_exc()}")
+        return {"error": error_msg}, 500
 
 
 @app.route("/combats", methods=["POST"])
@@ -111,31 +289,50 @@ def create_combat():
         type: integer
       - name: judges
         in: formData
-        type: integer
+        type: string
     responses:
       200:
         description: Combat created and returned updated list
+      400:
+        description: Missing required fields
     """
+    
+    # Validate required fields
+    required_fields = ["time", "red", "blue", "judges"]
+    missing_fields = [field for field in required_fields if field not in request.form]
+    
+    if missing_fields:
+        return {
+            "error": "Missing required fields",
+            "missing_fields": missing_fields,
+            "expected_fields": {
+                "required": required_fields,
+                "optional": ["points_red", "points_blue", "fouls_red", "fouls_blue"]
+            }
+        }, 400
 
-    data = {
-        "time": request.form["time"],
-        "red": request.form["red"],
-        "blue": request.form["blue"],
-        "points_red": request.form["points_red"],
-        "points_blue": request.form["points_blue"],
-        "fouls_red": request.form["fouls_red"],
-        "fouls_blue": request.form["fouls_blue"],
-        "judges": request.form["judges"]
-    }
+    try:
+        data = {
+            "time": request.form["time"],
+            "red": request.form["red"],
+            "blue": request.form["blue"],
+            "points_red": request.form.get("points_red", 0),
+            "points_blue": request.form.get("points_blue", 0),
+            "fouls_red": request.form.get("fouls_red", 0),
+            "fouls_blue": request.form.get("fouls_blue", 0),
+            "judges": request.form["judges"]
+        }
 
-    message = {
-        "action": "create",
-        "data": data
-    }
+        message = {
+            "action": "create",
+            "data": data
+        }
 
-    send_to_queue(message)
-
-    return index()
+        send_to_queue(message)
+        return index()
+    except Exception as e:
+        app.logger.error(f"Error creating combat: {str(e)}\n{traceback.format_exc()}")
+        return {"error": f"Failed to create combat: {str(e)}"}, 500
 
 
 @app.route("/combats/<int:combat_id>", methods=["PUT"])
@@ -144,7 +341,7 @@ def update_combat(combat_id):
     Update an existing combat
     ---
     parameters:
-      - name: combat_id
+      - name: id
         in: path
         type: integer
         required: true
@@ -174,7 +371,7 @@ def update_combat(combat_id):
     """
 
     data = {
-        "combat_id": combat_id,
+        "id": combat_id,
         "points_red": request.form.get("points_red"),
         "points_blue": request.form.get("points_blue"),
         "fouls_red": request.form.get("fouls_red"),
@@ -213,7 +410,7 @@ def delete_combat(combat_id):
     message = {
         "action": "delete",
         "data": {
-            "combat_id": combat_id
+            "id": combat_id
         }
     }
 
@@ -285,17 +482,23 @@ def health_check():
         cur.close()
         conn.close()
         health_status["database"] = "connected"
+        health_status["rabbitmq"] = "connected" if _rabbitmq_connected else "untested"
         return health_status, 200
     except Exception as e:
-        # Log the error but allow the service to be considered healthy if app is running
-        # This prevents restart loops during initial startup
+        # Check if we're still in startup grace period
+        in_grace_period = is_startup_grace_period()
+        
+        # Log the error
+        app.logger.warning(f"Database connection failed: {str(e)}")
         health_status["database"] = "unavailable"
         health_status["database_error"] = str(e)
+        health_status["startup_grace_period"] = in_grace_period
         
-        # Return 503 if database is truly unavailable (after grace period)
-        # For now, return 200 to allow the service to stabilize
-        # The load balancer health check grace period should handle startup delays
-        return health_status, 200
+        # Return 200 during grace period to allow stabilization, 503 after
+        if in_grace_period:
+            return health_status, 200
+        else:
+            return health_status, 503
 
 
 if __name__ == "__main__":
