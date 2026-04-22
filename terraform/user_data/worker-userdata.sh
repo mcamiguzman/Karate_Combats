@@ -75,6 +75,7 @@ Type=simple
 User=ubuntu
 WorkingDirectory=/opt/karate-worker
 EnvironmentFile=/opt/karate-worker/.env
+Environment="PYTHONUNBUFFERED=1"
 ExecStart=/opt/karate-worker/venv/bin/python worker/worker.py
 Restart=always
 RestartSec=10

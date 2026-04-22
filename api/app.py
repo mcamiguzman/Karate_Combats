@@ -157,7 +157,7 @@ def send_to_queue(message):
             _last_rabbitmq_failure_time = None
             return
         
-        except pika.exceptions.AMQPConnectionError as e:
+        except pika.exceptions.AMQPError as e:
             _rabbitmq_failures += 1
             _last_rabbitmq_failure_time = time.time()
             elapsed = time.time() - start_time
@@ -339,7 +339,7 @@ def create_combat():
         return {"error": f"Failed to create combat: {str(e)}"}, 500
 
 
-@app.route("/combats/<int:combat_id>", methods=["PUT"])
+@app.route("/combats/<int:id>", methods=["PUT"])
 def update_combat(id):
     """
     Update an existing combat record
@@ -394,13 +394,13 @@ def update_combat(id):
     return {"status": "success", "message": f"Combat {id} queued for update"}, 202
 
 
-@app.route("/combats/<int:combat_id>", methods=["DELETE"])
+@app.route("/combats/<int:id>", methods=["DELETE"])
 def delete_combat(id):
     """
     Delete a combat record
     ---
     parameters:
-      - name: combat_id
+      - name: id
         in: path
         type: integer
         required: true

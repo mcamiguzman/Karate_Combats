@@ -189,7 +189,7 @@ def callback(ch, method, properties, body):
         elif action == "update":
             print(f"Processing UPDATE action for combat {data.get('combat_id')}")
 
-            combat_id = data.get("combat_id")
+            id = data.get("id")
             
             # Build dynamic SQL for updates
             update_fields = []
@@ -242,9 +242,9 @@ def callback(ch, method, properties, body):
                 print(f"No update fields provided for combat {combat_id}")
 
         elif action == "delete":
-            print(f"Processing DELETE action for combat {data.get('combat_id')}")
+            print(f"Processing DELETE action for combat {data.get('id')}")
 
-            combat_id = data.get("combat_id")
+            id = data.get("id")
 
             # Verify combat exists
             cur.execute("SELECT id FROM combats WHERE id = %s", (combat_id,))
@@ -299,4 +299,13 @@ channel.basic_consume(
 
 print("Worker waiting for messages...")
 
-channel.start_consuming()
+try:
+    channel.start_consuming()
+except KeyboardInterrupt:
+    print("Worker interrupted")
+    channel.stop_consuming()
+    connection.close()
+except Exception as e:
+    print(f"Worker error: {str(e)}")
+    connection.close()
+    raise
