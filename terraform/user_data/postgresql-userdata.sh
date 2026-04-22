@@ -81,36 +81,37 @@ done
 
 # Configure PostgreSQL to accept password-based authentication on LOCAL (socket) connections
 # This allows users to connect via psql on the same machine using password authentication
+# Strategy: Rebuild pg_hba.conf from scratch with correct rule ordering
 for PG_HBA in /etc/postgresql/*/main/pg_hba.conf; do
     if [ -f "$PG_HBA" ]; then
-        # Remove any existing LOCAL rules for the application user to avoid duplicates
-        sed -i "/^local.*${DB_USER}/d" "$PG_HBA"
+        # Backup original
+        cp "$PG_HBA" "$PG_HBA.backup"
         
-        # Find the line number of the default "local all all peer" rule
-        LINE_NUM=$(grep -n "^local[[:space:]].*all[[:space:]].*all[[:space:]].*peer" "$PG_HBA" | head -1 | cut -d: -f1)
+        # Extract all comments and host rules (skip all LOCAL rules - we'll add fresh ones)
+        grep -v "^local" "$PG_HBA.backup" > "$PG_HBA.tmp"
         
-        if [ -z "$LINE_NUM" ]; then
-            # If peer rule not found, append at end
-            cat >> "$PG_HBA" << LOCAL_RULES_EOF
+        # Create new pg_hba.conf with LOCAL rules FIRST (highest priority)
+        cat > "$PG_HBA.new" << EOF_PG_HBA
+# PostgreSQL Client Authentication Configuration
+# Generated automatically - md5 LOCAL rules for application user
 
-# Allow password-based authentication on LOCAL socket connections for application user
+# Order of rules is important - matches stop at first match
+# Application user LOCAL auth (socket connections) - MUST come first
 local   ${DB_NAME}    ${DB_USER}    md5
 local   all           all          md5
-LOCAL_RULES_EOF
-        else
-            # Insert md5 rules BEFORE the peer rule (so they match first)
-            # Create temp file with rules
-            cat > /tmp/pg_hba_insert.txt << LOCAL_RULES_EOF
 
-# Allow password-based authentication on LOCAL socket connections for application user
-local   ${DB_NAME}    ${DB_USER}    md5
-local   all           all          md5
-LOCAL_RULES_EOF
-            # Insert at the line before the peer rule
-            sed -i "${LINE_NUM}r /tmp/pg_hba_insert.txt" "$PG_HBA"
-            rm /tmp/pg_hba_insert.txt
-        fi
-        echo "Updated LOCAL rules in: $PG_HBA (inserted before peer rule at line $LINE_NUM)"
+# Original rules (host-based for network connections)
+EOF_PG_HBA
+        
+        # Append original host rules (not LOCAL rules)
+        grep "^host" "$PG_HBA.backup" >> "$PG_HBA.new" || true
+        grep "^#" "$PG_HBA.backup" >> "$PG_HBA.new" || true
+        
+        # Replace original with new config
+        mv "$PG_HBA.new" "$PG_HBA"
+        rm -f "$PG_HBA.tmp"
+        
+        echo "Rebuilt pg_hba.conf: $PG_HBA"
     fi
 done
 
@@ -154,6 +155,8 @@ done
 SCHEMA_DIR="/tmp"
 DB_INIT_SQL="/tmp/init.sql"
 
+echo "Preparing schema initialization SQL file: $DB_INIT_SQL"
+
 # Create the init.sql with the schema
 cat > $DB_INIT_SQL << 'SCHEMA_EOF'
 CREATE TABLE IF NOT EXISTS combats (
@@ -188,10 +191,25 @@ CREATE INDEX IF NOT EXISTS idx_orders_combat_id ON orders(combat_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 SCHEMA_EOF
 
-# Run the schema initialization
-sudo -u postgres psql ${DB_NAME} < $DB_INIT_SQL
+echo "Schema SQL file created successfully at $DB_INIT_SQL"
+echo "File size: $(stat -f%z $DB_INIT_SQL 2>/dev/null || stat -c%s $DB_INIT_SQL 2>/dev/null || echo 'unknown') bytes"
 
-echo "Initialized database schema"
+# Verify the file exists before attempting to run it
+if [ ! -f "$DB_INIT_SQL" ]; then
+    echo "✗ ERROR: Schema initialization file not created at $DB_INIT_SQL"
+    exit 1
+fi
+
+echo "Running schema initialization using psql -f flag (more reliable than stdin redirection)..."
+# Run the schema initialization using -f flag (more reliable than < stdin redirection with sudo)
+if ! sudo -u postgres psql -d ${DB_NAME} -f $DB_INIT_SQL 2>&1; then
+    echo "✗ ERROR: Schema initialization failed. Check PostgreSQL logs for details."
+    echo "Attempting to debug: checking database connection..."
+    sudo -u postgres psql -c "SELECT version();" || echo "Could not connect to PostgreSQL"
+    exit 1
+fi
+
+echo "✓ Schema initialization completed successfully"
 
 # CRITICAL FIX: Grant ALL privileges on all existing tables and sequences to application user
 # This handles tables that may have been created before DEFAULT PRIVILEGES were set
@@ -217,14 +235,32 @@ GRANT_SQL
 echo "Fixed permissions on all tables and sequences"
 
 # Verify the schema was created
-sudo -u postgres psql ${DB_NAME} -c "\dt"
+echo "Verifying schema creation - listing all tables:"
+TABLE_LIST=$(sudo -u postgres psql ${DB_NAME} -c "\dt" 2>&1)
+echo "$TABLE_LIST"
+
+# Check if tables actually exist
+if echo "$TABLE_LIST" | grep -q "combats"; then
+    echo "✓ combats table verified"
+else
+    echo "✗ WARNING: combats table not found in database"
+fi
+
+if echo "$TABLE_LIST" | grep -q "orders"; then
+    echo "✓ orders table verified"
+else
+    echo "✗ WARNING: orders table not found in database"
+fi
 
 echo "Running permission verification tests..."
 
+# Set password for non-interactive authentication
+export PGPASSWORD="${DB_PASSWORD}"
+
 # Test 1: Verify application user can SELECT from combats
 echo "Test 1: SELECT permission on combats..."
-PSQL_SELECT_RESULT=$(sudo -u postgres psql ${DB_NAME} -U ${DB_USER} -c "SELECT COUNT(*) FROM combats;" 2>&1)
-if [[ $PSQL_SELECT_RESULT == *"(1 row)"* ]] || [[ $PSQL_SELECT_RESULT == *"0"* ]]; then
+PSQL_SELECT_RESULT=$(sudo -E -u postgres psql ${DB_NAME} -U ${DB_USER} -c "SELECT COUNT(*) FROM combats;" 2>&1 || true)
+if [[ $PSQL_SELECT_RESULT == *"(1 row)"* ]] || [[ $PSQL_SELECT_RESULT == *" 0"* ]]; then
     echo "✓ SELECT permission PASSED - Application user can read combats table"
 else
     echo "✗ SELECT permission FAILED - Error: $PSQL_SELECT_RESULT"
@@ -232,23 +268,26 @@ fi
 
 # Test 2: Verify application user can INSERT into combats
 echo "Test 2: INSERT permission on combats..."
-PSQL_INSERT_RESULT=$(sudo -u postgres psql ${DB_NAME} -U ${DB_USER} -c "INSERT INTO combats (time, participant_red, participant_blue, judges) VALUES ('test-time', 'test-red', 'test-blue', 'test-judge') RETURNING id;" 2>&1)
+PSQL_INSERT_RESULT=$(sudo -E -u postgres psql ${DB_NAME} -U ${DB_USER} -c "INSERT INTO combats (time, participant_red, participant_blue, judges) VALUES ('test-time', 'test-red', 'test-blue', 'test-judge') RETURNING id;" 2>&1 || true)
 if [[ $PSQL_INSERT_RESULT == *"1 row"* ]] || [[ $PSQL_INSERT_RESULT == *" 1"* ]]; then
     echo "✓ INSERT permission PASSED - Application user can write to combats table"
     # Clean up test data
-    sudo -u postgres psql ${DB_NAME} -U ${DB_USER} -c "DELETE FROM combats WHERE time = 'test-time';" 2>&1 > /dev/null
+    sudo -E -u postgres psql ${DB_NAME} -U ${DB_USER} -c "DELETE FROM combats WHERE time = 'test-time';" 2>&1 > /dev/null || true
 else
     echo "✗ INSERT permission FAILED - Error: $PSQL_INSERT_RESULT"
 fi
 
 # Test 3: Verify application user can SELECT from orders
 echo "Test 3: SELECT permission on orders..."
-PSQL_ORDERS=$(sudo -u postgres psql ${DB_NAME} -U ${DB_USER} -c "SELECT COUNT(*) FROM orders;" 2>&1)
-if [[ $PSQL_ORDERS == *"(1 row)"* ]] || [[ $PSQL_ORDERS == *"0"* ]]; then
+PSQL_ORDERS=$(sudo -E -u postgres psql ${DB_NAME} -U ${DB_USER} -c "SELECT COUNT(*) FROM orders;" 2>&1 || true)
+if [[ $PSQL_ORDERS == *"(1 row)"* ]] || [[ $PSQL_ORDERS == *" 0"* ]]; then
     echo "✓ SELECT permission PASSED - Application user can read orders table"
 else
     echo "✗ SELECT permission FAILED - Error: $PSQL_ORDERS"
 fi
+
+# Unset password from environment
+unset PGPASSWORD
 
 echo "Permission verification complete!"
 echo ""
