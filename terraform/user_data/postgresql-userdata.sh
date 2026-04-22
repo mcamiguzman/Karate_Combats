@@ -93,12 +93,19 @@ for PG_HBA in /etc/postgresql/*/main/pg_hba.conf; do
         # Create new pg_hba.conf with LOCAL rules FIRST (highest priority)
         cat > "$PG_HBA.new" << EOF_PG_HBA
 # PostgreSQL Client Authentication Configuration
-# Generated automatically - md5 LOCAL rules for application user
+# Generated automatically - LOCAL rules with proper authentication methods
 
 # Order of rules is important - matches stop at first match
-# Application user LOCAL auth (socket connections) - MUST come first
+
+# CRITICAL: System admin (postgres OS user) needs PEER authentication
+# This allows the postgres system user to connect without a password via LOCAL sockets
+local   all          postgres    peer
+
+# Application user password auth to specific database
 local   ${DB_NAME}    ${DB_USER}    md5
-local   all           all          md5
+
+# All other LOCAL connections use password auth  
+local   all          all         md5
 
 # Original rules (host-based for network connections)
 EOF_PG_HBA
