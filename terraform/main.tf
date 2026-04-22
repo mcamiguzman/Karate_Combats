@@ -405,14 +405,16 @@ resource "aws_instance" "worker_server" {
   }
 
   user_data = base64encode(templatefile("${path.module}/user_data/worker-userdata.sh", {
-    DB_HOST       = var.postgresql_private_ip
-    RABBITMQ_HOST = var.rabbitmq_private_ip
-    RABBITMQ_PORT = 5672
-    DB_PORT       = 5432
-    DB_USER       = var.db_user
-    DB_PASSWORD   = var.db_password
-    DB_NAME       = var.db_name
-    GIT_REPO_URL  = var.git_repo_url
+    DB_HOST           = var.postgresql_private_ip
+    RABBITMQ_HOST     = var.rabbitmq_private_ip
+    RABBITMQ_PORT     = 5672
+    RABBITMQ_USER     = var.rabbitmq_user
+    RABBITMQ_PASSWORD = var.rabbitmq_password
+    DB_PORT           = 5432
+    DB_USER           = var.db_user
+    DB_PASSWORD       = var.db_password
+    DB_NAME           = var.db_name
+    GIT_REPO_URL      = var.git_repo_url
   }))
 
   root_block_device {
@@ -533,14 +535,16 @@ resource "aws_launch_template" "api_lt" {
   vpc_security_group_ids = [aws_security_group.api_sg.id]
 
   user_data = base64encode(templatefile("${path.module}/user_data/api-userdata.sh", {
-    DB_HOST       = var.postgresql_private_ip
-    RABBITMQ_HOST = var.rabbitmq_private_ip
-    RABBITMQ_PORT = 5672
-    DB_PORT       = 5432
-    DB_USER       = var.db_user
-    DB_PASSWORD   = var.db_password
-    DB_NAME       = var.db_name
-    GIT_REPO_URL  = var.git_repo_url
+    DB_HOST           = var.postgresql_private_ip
+    RABBITMQ_HOST     = var.rabbitmq_private_ip
+    RABBITMQ_PORT     = 5672
+    RABBITMQ_USER     = var.rabbitmq_user
+    RABBITMQ_PASSWORD = var.rabbitmq_password
+    DB_PORT           = 5432
+    DB_USER           = var.db_user
+    DB_PASSWORD       = var.db_password
+    DB_NAME           = var.db_name
+    GIT_REPO_URL      = var.git_repo_url
   }))
 
   block_device_mappings {

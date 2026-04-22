@@ -86,15 +86,31 @@ for PG_HBA in /etc/postgresql/*/main/pg_hba.conf; do
         # Remove any existing LOCAL rules for the application user to avoid duplicates
         sed -i "/^local.*${DB_USER}/d" "$PG_HBA"
         
-        # Add LOCAL authentication rules for password-based (md5) authentication on socket connections
-        # These must come before the "local all all" rule for proper matching
-        cat >> "$PG_HBA" << LOCAL_RULES_EOF
+        # Find the line number of the default "local all all peer" rule
+        LINE_NUM=$(grep -n "^local[[:space:]].*all[[:space:]].*all[[:space:]].*peer" "$PG_HBA" | head -1 | cut -d: -f1)
+        
+        if [ -z "$LINE_NUM" ]; then
+            # If peer rule not found, append at end
+            cat >> "$PG_HBA" << LOCAL_RULES_EOF
 
 # Allow password-based authentication on LOCAL socket connections for application user
 local   ${DB_NAME}    ${DB_USER}    md5
 local   all           all          md5
 LOCAL_RULES_EOF
-        echo "Updated LOCAL rules in: $PG_HBA"
+        else
+            # Insert md5 rules BEFORE the peer rule (so they match first)
+            # Create temp file with rules
+            cat > /tmp/pg_hba_insert.txt << LOCAL_RULES_EOF
+
+# Allow password-based authentication on LOCAL socket connections for application user
+local   ${DB_NAME}    ${DB_USER}    md5
+local   all           all          md5
+LOCAL_RULES_EOF
+            # Insert at the line before the peer rule
+            sed -i "${LINE_NUM}r /tmp/pg_hba_insert.txt" "$PG_HBA"
+            rm /tmp/pg_hba_insert.txt
+        fi
+        echo "Updated LOCAL rules in: $PG_HBA (inserted before peer rule at line $LINE_NUM)"
     fi
 done
 
