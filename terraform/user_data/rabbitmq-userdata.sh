@@ -75,6 +75,9 @@ fi
 
 rabbitmqctl set_permissions -p / "$RABBITMQ_USER" ".*" ".*" ".*" || exit 1
 
+# Tag karate user as management user so it can access the management plugin UI
+rabbitmqctl set_user_tags "$RABBITMQ_USER" management administrator || exit 1
+
 set +e
 rabbitmqctl delete_user guest 2>&1
 set -e

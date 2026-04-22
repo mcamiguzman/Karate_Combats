@@ -20,6 +20,8 @@ DB_NAME = os.environ.get("DB_NAME", "combats")
 
 RABBITMQ_HOST = os.environ.get("RABBITMQ_HOST", "rabbitmq")
 RABBITMQ_PORT = int(os.environ.get("RABBITMQ_PORT", "5672"))
+RABBITMQ_USER = os.environ.get("RABBITMQ_USER", "karate")
+RABBITMQ_PASSWORD = os.environ.get("RABBITMQ_PASSWORD", "karate_password")
 
 # Track service readiness
 _db_connected = False
@@ -132,8 +134,9 @@ def send_to_queue(message):
     
     for attempt in range(max_retries):
         try:
+            credentials = pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASSWORD)
             connection = pika.BlockingConnection(
-                pika.ConnectionParameters(host=RABBITMQ_HOST, port=RABBITMQ_PORT)
+                pika.ConnectionParameters(host=RABBITMQ_HOST, port=RABBITMQ_PORT, credentials=credentials)
             )
             channel = connection.channel()
             channel.queue_declare(queue="combat_queue")
