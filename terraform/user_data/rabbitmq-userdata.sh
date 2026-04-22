@@ -33,6 +33,18 @@ apt-get install -y erlang-base \
   erlang-syntax-tools erlang-tftp erlang-tools erlang-xmerl || exit 1
 apt-get install -y rabbitmq-server --fix-missing || exit 1
 
+# Write configuration file BEFORE starting RabbitMQ to prevent boot failures
+cat > /etc/rabbitmq/rabbitmq.conf << 'EOF'
+vm_memory_high_watermark.relative = 0.7
+disk_free_limit.absolute = 50MB
+listeners.tcp.default = 5672
+management.tcp.port = 15672
+management.tcp.ip = 0.0.0.0
+channel_max = 2048
+queue_master_locator = min-masters
+log.file.level = info
+EOF
+
 systemctl start rabbitmq-server || exit 1
 systemctl enable rabbitmq-server || exit 1
 
@@ -50,17 +62,6 @@ sleep 3
 rabbitmq-plugins enable rabbitmq_management || exit 1
 sleep 5
 rabbitmq-plugins list | grep -q "rabbitmq_management" || exit 1
-
-cat > /etc/rabbitmq/rabbitmq.conf << 'EOF'
-vm_memory_high_watermark.relative = 0.7
-disk_free_limit.absolute = 50MB
-listeners.tcp.default = 5672
-management.tcp.port = 15672
-management.tcp.ip = 0.0.0.0
-channel_max = 2048
-queue_master_location = min-masters
-log.file.level = info
-EOF
 
 set +e
 rabbitmqctl add_user "$RABBITMQ_USER" "$RABBITMQ_PASSWORD" 2>&1
