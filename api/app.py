@@ -139,11 +139,12 @@ def send_to_queue(message):
                 pika.ConnectionParameters(host=RABBITMQ_HOST, port=RABBITMQ_PORT, credentials=credentials)
             )
             channel = connection.channel()
-            channel.queue_declare(queue="combat_queue")
+            channel.queue_declare(queue="combat_queue", durable=True)
             channel.basic_publish(
                 exchange="",
                 routing_key="combat_queue",
-                body=json.dumps(message)
+                body=json.dumps(message),
+                properties=pika.BasicProperties(delivery_mode=2)
             )
             connection.close()
             

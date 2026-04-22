@@ -288,7 +288,9 @@ connection = wait_for_rabbitmq()
 
 channel = connection.channel()
 
-channel.queue_declare(queue="combat_queue")
+channel.queue_declare(queue="combat_queue", durable=True)
+
+channel.basic_qos(prefetch_count=1)
 
 channel.basic_consume(
     queue="combat_queue",
