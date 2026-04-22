@@ -184,11 +184,11 @@ def send_to_queue(message):
 @app.route("/")
 def index():
     """
-    Get all combats
+    Root endpoint to access the web interface
     ---
     responses:
       200:
-        description: List of combats retrieved successfully
+        description: Web interface loaded successfully
       500:
         description: Internal server error
     """
@@ -263,7 +263,7 @@ def get_combats():
 @app.route("/combats", methods=["POST"])
 def create_combat():
     """
-    Create a new combat
+    Create a new combat record
     ---
     parameters:
       - name: time
@@ -294,8 +294,8 @@ def create_combat():
         in: formData
         type: string
     responses:
-      200:
-        description: Combat created and returned updated list
+      202:
+        description: Combat record sent to queue for creation
       400:
         description: Missing required fields
     """
@@ -332,16 +332,16 @@ def create_combat():
         }
 
         send_to_queue(message)
-        return index()
+        return {"status": "success", "message": "Combat queued for creation"}, 202
     except Exception as e:
         app.logger.error(f"Error creating combat: {str(e)}\n{traceback.format_exc()}")
         return {"error": f"Failed to create combat: {str(e)}"}, 500
 
 
 @app.route("/combats/<int:combat_id>", methods=["PUT"])
-def update_combat(combat_id):
+def update_combat(id):
     """
-    Update an existing combat
+    Update an existing combat record
     ---
     parameters:
       - name: id
@@ -367,14 +367,14 @@ def update_combat(combat_id):
         in: formData
         type: string
     responses:
-      200:
-        description: Combat updated successfully
+      202:
+        description: Combat record update request sent
       404:
         description: Combat not found
     """
 
     data = {
-        "id": combat_id,
+        "id": id,
         "points_red": request.form.get("points_red"),
         "points_blue": request.form.get("points_blue"),
         "fouls_red": request.form.get("fouls_red"),
@@ -390,11 +390,11 @@ def update_combat(combat_id):
 
     send_to_queue(message)
 
-    return index()
+    return {"status": "success", "message": f"Combat {id} queued for update"}, 202
 
 
 @app.route("/combats/<int:combat_id>", methods=["DELETE"])
-def delete_combat(combat_id):
+def delete_combat(id):
     """
     Delete a combat record
     ---
@@ -404,8 +404,8 @@ def delete_combat(combat_id):
         type: integer
         required: true
     responses:
-      200:
-        description: Combat deleted successfully
+      202:
+        description: Combat record deletion request sent
       404:
         description: Combat not found
     """
@@ -413,13 +413,13 @@ def delete_combat(combat_id):
     message = {
         "action": "delete",
         "data": {
-            "id": combat_id
+            "id": id
         }
     }
 
     send_to_queue(message)
 
-    return index()
+    return {"status": "success", "message": f"Combat {id} queued for deletion"}, 202
 
 
 @app.route("/orders", methods=["GET"])

@@ -79,6 +79,25 @@ RULES_EOF
     fi
 done
 
+# Configure PostgreSQL to accept password-based authentication on LOCAL (socket) connections
+# This allows users to connect via psql on the same machine using password authentication
+for PG_HBA in /etc/postgresql/*/main/pg_hba.conf; do
+    if [ -f "$PG_HBA" ]; then
+        # Remove any existing LOCAL rules for the application user to avoid duplicates
+        sed -i "/^local.*${DB_USER}/d" "$PG_HBA"
+        
+        # Add LOCAL authentication rules for password-based (md5) authentication on socket connections
+        # These must come before the "local all all" rule for proper matching
+        cat >> "$PG_HBA" << LOCAL_RULES_EOF
+
+# Allow password-based authentication on LOCAL socket connections for application user
+local   ${DB_NAME}    ${DB_USER}    md5
+local   all           all          md5
+LOCAL_RULES_EOF
+        echo "Updated LOCAL rules in: $PG_HBA"
+    fi
+done
+
 # Update postgresql.conf to listen on all network interfaces
 # Find all postgresql.conf files and update them
 for POSTGRES_CONF in /etc/postgresql/*/main/postgresql.conf; do

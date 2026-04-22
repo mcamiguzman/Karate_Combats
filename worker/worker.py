@@ -160,8 +160,8 @@ def callback(ch, method, properties, body):
             RETURNING id
             """, (
                 data.get("time"),
-                data.get("red"),
-                data.get("blue"),
+                data.get("participant_red"),
+                data.get("participant_blue"),
                 int(data.get("points_red", 0)),
                 int(data.get("points_blue", 0)),
                 int(data.get("fouls_red", 0)),
