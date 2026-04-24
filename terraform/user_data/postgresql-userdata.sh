@@ -176,26 +176,29 @@ CREATE TABLE IF NOT EXISTS combats (
     fouls_red INT,
     fouls_blue INT,
     judges TEXT,
-    status VARCHAR(20),
+    status VARCHAR(20) DEFAULT 'pending',
     date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_combats_status ON combats(status);
 CREATE INDEX IF NOT EXISTS idx_combats_date ON combats(date);
 
--- Optionally create the Orders table if mentioned in requirements
+-- Orders Table: Tracks consumer transactions and actions on combats
 CREATE TABLE IF NOT EXISTS orders (
     id SERIAL PRIMARY KEY,
-    combat_id INT REFERENCES combats(id),
+    combat_id INT NOT NULL REFERENCES combats(id) ON DELETE CASCADE,
     consumer_id VARCHAR(100),
-    action VARCHAR(50),
-    status VARCHAR(20),
+    action VARCHAR(50) NOT NULL,
+    action_details JSONB,
+    status VARCHAR(20) DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_orders_combat_id ON orders(combat_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
 SCHEMA_EOF
 
 echo "Schema SQL file created successfully at $DB_INIT_SQL"

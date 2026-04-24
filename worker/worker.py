@@ -187,9 +187,9 @@ def callback(ch, method, properties, body):
             print(f"Combat {combat_id} created and stored in database")
 
         elif action == "update":
-            print(f"Processing UPDATE action for combat {data.get('combat_id')}")
+            print(f"Processing UPDATE action for combat {data.get('id')}")
 
-            id = data.get("id")
+            id = data.get('id')
             
             # Build dynamic SQL for updates
             update_fields = []
@@ -220,36 +220,35 @@ def callback(ch, method, properties, body):
                 update_values.append(data.get("judges"))
 
             if update_fields:
-                update_values.append(combat_id)
+                update_values.append(id)
                 sql = f"UPDATE combats SET {', '.join(update_fields)} WHERE id = %s"
                 cur.execute(sql, update_values)
-
                 # Create order record
                 cur.execute("""
                 INSERT INTO orders
                 (combat_id, consumer_id, action, action_details, status)
                 VALUES (%s, %s, %s, %s, 'completed')
                 """, (
-                    combat_id,
+                    id,
                     data.get("consumer_id", "system"),
                     "update",
                     json.dumps(data)
                 ))
 
                 conn.commit()
-                print(f"Combat {combat_id} updated successfully")
+                print(f"Combat {id} updated successfully")
             else:
-                print(f"No update fields provided for combat {combat_id}")
+                print(f"No update fields provided for combat {id}")
 
         elif action == "delete":
             print(f"Processing DELETE action for combat {data.get('id')}")
 
-            id = data.get("id")
+            id = data.get('id')
 
             # Verify combat exists
-            cur.execute("SELECT id FROM combats WHERE id = %s", (combat_id,))
+            cur.execute("SELECT id FROM combats WHERE id = %s", (id,))
             if not cur.fetchone():
-                print(f"Combat {combat_id} not found")
+                print(f"Combat {id} not found")
             else:
                 # Create order record before deletion
                 cur.execute("""
@@ -257,16 +256,16 @@ def callback(ch, method, properties, body):
                 (combat_id, consumer_id, action, action_details, status)
                 VALUES (%s, %s, %s, %s, 'completed')
                 """, (
-                    combat_id,
+                    id,
                     data.get("consumer_id", "system"),
                     "delete",
-                    json.dumps({"combat_id": combat_id})
+                    json.dumps({"combat_id": id})
                 ))
 
                 # Delete combat (cascade deletes related orders due to FK constraint)
-                cur.execute("DELETE FROM combats WHERE id = %s", (combat_id,))
+                cur.execute("DELETE FROM combats WHERE id = %s", (id,))
                 conn.commit()
-                print(f"Combat {combat_id} deleted successfully")
+                print(f"Combat {id} deleted successfully")
 
         else:
             print(f"Unknown action: {action}")
