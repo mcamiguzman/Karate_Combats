@@ -71,15 +71,15 @@ output "subnet_id" {
 
 output "ssh_to_rabbitmq" {
   description = "SSH command to connect to RabbitMQ server"
-  value       = "ssh -i your_key.pem ubuntu@${aws_eip.rabbitmq_eip.public_ip}"
+  value       = "ssh -i {ec2_key_pair_name}.pem ubuntu@${aws_eip.rabbitmq_eip.public_ip}"
 }
 
 output "ssh_to_postgresql" {
   description = "SSH command to connect to PostgreSQL server"
-  value       = "ssh -i your_key.pem ubuntu@${aws_eip.postgresql_eip.public_ip}"
+  value       = "ssh -i {ec2_key_pair_name}.pem ubuntu@${aws_eip.postgresql_eip.public_ip}"
 }
 
 output "ssh_to_worker" {
   description = "SSH command to connect to Worker server"
-  value       = "ssh -i your_key.pem ubuntu@${aws_eip.worker_eip.public_ip}"
+  value       = "ssh -i {ec2_key_pair_name}.pem ubuntu@${aws_eip.worker_eip.public_ip}"
 }

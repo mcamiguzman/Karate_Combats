@@ -14,9 +14,9 @@ postgresql_private_ip  = "10.0.1.30"
 worker_private_ip      = "10.0.1.40"
 
 # Auto Scaling Group Configuration
-asg_min_size           = 1
+asg_min_size           = 2
 asg_max_size           = 3
-asg_desired_capacity   = 1
+asg_desired_capacity   = 2
 
 # SSH Access
 # IMPORTANT: Change this to your IP address in production

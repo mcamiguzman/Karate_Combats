@@ -63,7 +63,7 @@ variable "worker_private_ip" {
 variable "asg_min_size" {
   description = "Minimum number of instances in API ASG"
   type        = number
-  default     = 1
+  default     = 2
 }
 
 variable "asg_max_size" {
@@ -75,7 +75,7 @@ variable "asg_max_size" {
 variable "asg_desired_capacity" {
   description = "Desired number of instances in API ASG"
   type        = number
-  default     = 1
+  default     = 2
 }
 
 # Database configuration
