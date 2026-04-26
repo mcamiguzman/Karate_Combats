@@ -1,3 +1,4 @@
+
 version: '3.9'
 
 services:
@@ -7,6 +8,9 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: karate
+      RABBITMQ_DEFAULT_PASS: karate_password
 
   db:
     image: postgres:15
