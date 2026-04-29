@@ -44,7 +44,7 @@ def wait_for_rabbitmq():
     global _rabbitmq_connected, _rabbitmq_failures, _last_rabbitmq_failure_time
     
     max_retries = 3
-    max_total_time = 30
+    max_total_time = 120
     start_time = time.time()
     backoff_delays = [30, 30, 30]
     
@@ -93,7 +93,7 @@ def get_db():
     global _db_connected, _db_failures, _last_db_failure_time
     
     max_retries = 3
-    max_total_time = 30
+    max_total_time = 120
     start_time = time.time()
     backoff_delays = [30, 30, 30]
     
