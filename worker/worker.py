@@ -46,7 +46,7 @@ def wait_for_rabbitmq():
     max_retries = 3
     max_total_time = 30
     start_time = time.time()
-    backoff_delays = [2, 4, 8]
+    backoff_delays = [30, 30, 30]
     
     for attempt in range(max_retries):
         try:
@@ -95,7 +95,7 @@ def get_db():
     max_retries = 3
     max_total_time = 30
     start_time = time.time()
-    backoff_delays = [2, 4, 8]
+    backoff_delays = [30, 30, 30]
     
     for attempt in range(max_retries):
         try:
